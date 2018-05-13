@@ -186,7 +186,12 @@ var onMessage = function(request, sender, callback) {
         µb.netWhitelist = µb.whitelistFromString(request.whitelist);
         µb.saveWhitelist();
         break;
-
+    case 'setClickIgnoreList':
+        response = µb.changeUserSettings('clickIgnoreList', request.clickIgnoreList);
+        if (typeof response === 'undefined') { // return notifications either way
+          response = { notifications: makeCloneable(µb.adnauseam.getNotifications()) }; // #1163
+        }
+        break;
     case 'reactivateList':
         µb.reactivateList(request.list);
         break;

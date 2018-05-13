@@ -20,7 +20,8 @@
     var val = µb.userSettings.disableClickingForDNT && (
       µb.userSettings.dntDomains.indexOf(ad.pageDomain) > -1 ||
       µb.userSettings.dntDomains.indexOf(ad.targetDomain) > -1 ||
-      µb.userSettings.dntDomains.indexOf(ad.targetHostname) > -1 );
+      µb.userSettings.dntDomains.indexOf(ad.targetHostname) > -1 ||
+      µb.userSettings.clickIgnoreList.indexOf(ad.targetHostname) > -1 ); //do not visit ads which are hosted on ignored domains
 
     //console.log('mustBlock: ',val,µb.userSettings.disableClickingForDNT,
       //ad.targetDomain,µb.userSettings.dntDomains.indexOf(ad.targetDomain), ad);
