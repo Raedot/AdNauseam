@@ -10,3 +10,4 @@ misc
 artifacts/*
 
 assets/checksums/ublock0.txt
+*.swp
