@@ -169,33 +169,28 @@
         add any non-hashed ads to orphans
     }*/
     var checkHashes = function () {
-
-      for (var i = 0; i < pages.length; i++) {
-
-        var isHashed = validMD5(pages[i]);
+      for (let page of pages) {
+        var isHashed = validMD5(page);
 
         if (!isHashed) {
-
           unhashed.push(pages[i]);
-          hashes = Object.keys(admap[pages[i]]);
-          for (var j = 0; j < hashes.length; j++) {
-
-            ad = admap[pages[i]][hashes[j]];
+          hashes = Object.keys(admap[page]);
+          for (let hash of hashes) {
+            ad = admap[page][hash];
             orphans.push(ad);
           }
+          continue
+        }
 
-        } else {
-
-          hashes = Object.keys(admap[pages[i]]);
-          for (var j = hashes.length - 1; j >= 0; j--) {
-
-            if (!validMD5(hashes[j])) {
-
-              ad = admap[pages[i]][hashes[j]];
-              delete admap[pages[i]][hashes[j]];
-              orphans.push(ad);
-            }
+        hashes = Object.keys(admap[page]);
+        for (let hash of hashes.reverse()) {
+          if (validMD5(hash)) {
+            continue
           }
+
+          ad = admap[page][hash];
+          delete admap[page][hash];
+          orphans.push(ad);
         }
       }
 
@@ -402,10 +397,10 @@
 
       title = unescapeHTML(title[1].trim());
 
-      for (var i = 0; i < errorStrings.length; i++) {
+      for (let err of errorStrings) {
 
         // check the title isn't something like 'file not found'
-        if (title.toLowerCase().indexOf(errorStrings[i]) > -1) {
+        if (title.toLowerCase().indexOf(err) > -1) {
 
           onVisitError.call(xhr, {
             title: title,
@@ -760,19 +755,19 @@
 
     var pages = Object.keys(admap);
 
-    for (var i = 0; i < pages.length; i++) {
+    for (let page of pages) {
 
-      if (admap[pages[i]]) {
+      if (admap[page]) {
 
-        var hashes = Object.keys(admap[pages[i]]);
+        var hashes = Object.keys(admap[page]);
 
-        for (var j = 0; j < hashes.length; j++) {
+        for (let hash of hashes) {
 
-          delete admap[pages[i]][hashes[j]];
+          delete admap[page][hash];
         }
       }
 
-      delete admap[pages[i]];
+      delete admap[page];
     }
 
     admap = {}; // redundant
@@ -819,11 +814,10 @@
   }
 
   var adById = function (id) {
-
     var list = adlist();
-    for (var i = 0; i < list.length; i++) {
-      if (list[i].id === id)
-        return list[i];
+    for (let listItem of list) {
+      if (listItem.id === id)
+        return listItem;
     }
   }
 
@@ -912,36 +906,31 @@
       newmap = replaceAll ? {} : admap,
       pages = Object.keys(map);
 
-    for (var i = 0; i < pages.length; i++) {
+    for (let page of pages) {
 
-      if (type(map[pages[i]]) !== 'object')
+      if (type(map[page]) !== 'object')
         return false;
 
       computeNextId();
-      var hashes = Object.keys(map[pages[i]]);
-      for (var j = 0; j < hashes.length; j++) {
-
-        var hash = hashes[j];
+      var hashes = Object.keys(map[page]);
+      for (let hash of hashes) {
         if (type(hash) !== 'string' || !(validMD5(hash) || hash.includes('::'))) {
-
           return warn('Bad hash in import: ', hash, ad); // tmp
         }
 
-        var ad = map[pages[i]][hash];
-        if (validateFields(ad)) {
+        var ad = map[page][hash];
 
-          validateTarget(ad); // accept either way
-          ad.id = ++idgen; // increment the id so as not to collide
-
-          if (!newmap[pages[i]]) newmap[pages[i]] = {};
-          newmap[pages[i]][hash] = ad;
-
-          pass++;
-
-        } else {
-
+        if (!validateFields(ad)) {
           warn('Invalid ad in import: ', ad); // tmp
         }
+
+        validateTarget(ad); // accept either way
+        ad.id = ++idgen; // increment the id so as not to collide
+
+        if (!newmap[page]) newmap[page] = {};
+        newmap[page][hash] = ad;
+
+        pass++;
       }
     }
 
@@ -952,9 +941,9 @@
 
     var map = replaceAll ? {} : admap;
 
-    for (var j = 0; j < ads.length; j++) {
+    for (let curAd of ads) {
 
-      var ad = updateLegacyAd(ads[j]);
+      var ad = updateLegacyAd(curAd);
       createAdmapEntry(ad, map)
     }
 
@@ -990,9 +979,9 @@
       return warn('no pages: ', pages);
     }
 
-    for (var i = 0; i < pages.length; i++) {
+    for (let page of pages) {
 
-      ads = map[pages[i]];
+      ads = map[page];
 
       if (type(ads) !== 'array') {
 
@@ -1000,11 +989,11 @@
         return false;
       }
 
-      newmap[pages[i]] = {};
+      newmap[page] = {};
 
-      for (var j = 0; j < ads.length; j++) {
+      for (let curAd of ads) {
 
-        ad = updateLegacyAd(ads[j]);
+        ad = updateLegacyAd(curAd);
         hash = computeHash(ad);
 
         if (!validateFields(ad)) {
@@ -1013,7 +1002,7 @@
           continue;
         }
 
-        newmap[pages[i]][hash] = ad;
+        newmap[page][hash] = ad;
 
         //log('converted ad', newmap[pages[i]][hash]);
       }
@@ -1077,10 +1066,8 @@
 
   var listsForFilter = function (compiledFilter) {
 
-    var entry, content, pos, c, lists = [];
-    for (var path in listEntries) {
-
-      entry = listEntries[path];
+    var content, pos, c, lists = [];
+    for (let entry of listEntries) {
       if (entry === undefined) {
         continue;
       }
@@ -1114,9 +1101,7 @@
     var domain = context.rootDomain,
       host = context.requestHostname;
 
-    for (var i = 0; i < allowAnyBlockOnDomains.length; i++) {
-
-      var dom = allowAnyBlockOnDomains[i];
+    for (let dom of allowAnyBlockOnDomains) {
       if (dom === domain || host.indexOf(dom) > -1) {
         return true;
       }
@@ -1187,33 +1172,26 @@
       return true;
     }
 
-    for (var i = 0; i < lists.length; i++) {
-
-      var name = lists[0];
-
-      if (activeBlockList(name)) {
-
-        if (raw.indexOf('@@') === 0) {                       // case B
-
-          logNetAllow(name, raw + ': ', url);
-          return false;
-        }
-
-        logNetBlock(name, raw + ': ', url);                  // case C
-        return true; // blocked, no need to continue
-      }
-      else {
-
+    for (let name of lists) {
+      if (!activeBlockList(name)) {
         if (!misses) var misses = [];
         if (!misses.contains(name)) misses.push(name);
+        continue
       }
+
+      if (raw.indexOf('@@') === 0) {                       // case B
+        logNetAllow(name, raw + ': ', url);
+        return false;
+      }
+
+      logNetBlock(name, raw + ': ', url);                  // case C
+      return true; // blocked, no need to continue
     }
 
     return allowRequest(misses.join(','), raw + ': ', url);  // case D
   }
 
   var adCount = function () {
-
     return adlist().length;
   }
 
@@ -1251,11 +1229,17 @@
 
     // Note(not-in-use): crashes over approx. 725 image or 70MB
 
-    var imgURLs = [];
+    /*var imgURLs = [];
     adlist().forEach(function (ad) {
       if (ad.contentType === 'img')
         imgURLs.push(ad.contentData.src);
-    });
+    });*/
+
+    let imgURLs = adlist().filter((ad) => {
+        return ad.contentType === 'img'
+    }).map((ad) => {
+        return ad.contentData.src
+    })
 
     // #639: download to a folder next to the export file (with same name -json)
 
@@ -1316,8 +1300,8 @@
           img = zip.folder(zipName),
           zipcount = 0;
 
-        for (var i = 0; i < files.length; i++) {
-          img.file(files[i].name, files[i].data, {
+        for (let file of files) {
+          img.file(file.name, file.data, {
             base64: true
           });
         }
@@ -1343,16 +1327,16 @@
 
   var admapToJSON = function(sanitize) {
 
-    var map = JSON.parse(JSON.stringify(admap)), // deep clone
+    let map = JSON.parse(JSON.stringify(admap)), // deep clone
       pages = Object.keys(map);
 
-    for (var i = 0; i < pages.length; i++) {
+    for (let page of pages) {
 
-      if (map[pages[i]]) {
-        var hashes = Object.keys(map[pages[i]]);
-        for (var j = 0; j < hashes.length; j++) {
+      if (map[page]) {
+        let hashes = Object.keys(map[page]);
+        for (let hash of hashes) {
 
-          var ad = map[pages[i]][hashes[j]];
+          let ad = map[page][hash];
 
           delete ad.current;
           delete ad.pageDomain;
@@ -1405,17 +1389,14 @@
   };
 
   exports.adsForVault = function (request, pageStore, tabId) {
-
     return adsForUI();
   };
 
   exports.mustAllowRequest = function (result, context) {
-
     return result !== 0 && !isBlockableRequest(context);
   };
 
   exports.itemInspected = function (request, pageStore, tabId) {
-
     if (request.id) {
       var ad = adById(request.id)
       inspected = ad;
@@ -1543,20 +1524,11 @@
   }
 
   exports.lookupAd = function (url, requestId) {
-
     //url = trimChar(url, '/'); // no trailing slash
 
-    var ads = adlist();
-
-    for (var i = 0; i < ads.length; i++) {
-
-      if (ads[i].attemptedTs) {
-        //console.log('check: '+ads[i].requestId+'/'+ads[i].targetUrl+' ?= '+requestId+'/'+url);
-        if (ads[i].requestId === requestId || ads[i].targetUrl === url) {
-          return ads[i];
-        }
-      }
-    }
+    return adlist().find((item) => {
+        return item.attemptedTs && (item.requestId === requestId || ad.targetUrl === url)
+    });
   };
 
   exports.registerAd = function (request, pageStore, tabId) {
@@ -1665,9 +1637,8 @@
     var cookieAttr = function(cookie, name) {
 
       var parts = cookie.split(';');
-      for (var i = 0; i < parts.length; i++) {
-        var keyval = parts[i].trim().split('=');
-        var key = keyval[0]
+      for (let part of parts) {
+        var keyval = part.trim().split('=');
         if (keyval[0].toLowerCase() === name)
           return keyval[1];
       }
@@ -1762,19 +1733,22 @@
     var result = [], pages = pageUrl ? [ YaMD5.hashStr(pageUrl) ]
       : Object.keys(admap);
 
-    for (var i = 0; admap && i < pages.length; i++) {
+    if (!admap) {
+      return result; //return empty set if no admaps are defined
+    }
 
-      if (admap[pages[i]]) {
+    for (let page of pages) {
 
-        var hashes = Object.keys(admap[pages[i]]);
+      if (admap[page]) {
 
-        for (var j = 0; j < hashes.length; j++) {
+        var hashes = Object.keys(admap[page]);
 
-          var ad = admap[pages[i]][hashes[j]];
+        for (let hash of hashes) {
+
+          var ad = admap[page][hash];
 
           // ignore text-ads according to parseTextAds prefe
           if (ad && (µb.userSettings.parseTextAds || ad.contentType !== 'text')) {
-
             if (!currentOnly || ad.current) {
               result.push(ad);
             }
@@ -1835,10 +1809,10 @@
       modified = false,
       path, entry;
 
-      for (var i = 0; i < lists.length; i++) {
-        if (lists[i] === note.listName) {
-            entry = lists[i];
-        } else if (note.listName === "easylist" && lists[i] === "fanboy-ultimate") {
+      for (let list of lists) {
+        if (list === note.listName) {
+            entry = list;
+        } else if (note.listName === "easylist" && list === "fanboy-ultimate") {
             //Fanboy's Ultimate Merged List
             entry = note.listName;
         }
